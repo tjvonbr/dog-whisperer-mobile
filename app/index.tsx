@@ -7,6 +7,7 @@ import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
 import { useEffect, useState } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import './globals.css';
 
 export default function App() {
   const [input, setInput] = useState('');
