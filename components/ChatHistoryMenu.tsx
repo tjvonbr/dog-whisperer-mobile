@@ -40,17 +40,26 @@ export default function ChatHistoryMenu({
     }).start();
   }, [isOpen, slideAnimation]);
 
-  const formatDate = (date: Date | string) => {
-    const d = new Date(date);
-    const now = new Date();
-    const diffInHours = (now.getTime() - d.getTime()) / (1000 * 60 * 60);
-    
-    if (diffInHours < 24) {
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 168) { // 7 days
-      return d.toLocaleDateString([], { weekday: 'short' });
-    } else {
-      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const formatDate = (date: Date | string | any) => {
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) {
+        return 'Unknown';
+      }
+      
+      const now = new Date();
+      const diffInHours = (now.getTime() - d.getTime()) / (1000 * 60 * 60);
+      
+      if (diffInHours < 24) {
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else if (diffInHours < 168) { // 7 days
+        return d.toLocaleDateString([], { weekday: 'short' });
+      } else {
+        return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    } catch (error) {
+      console.error('Error formatting date:', error, 'Date value:', date);
+      return 'Unknown';
     }
   };
 
@@ -166,6 +175,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+    fontFamily: 'Inter_700Bold',
   },
   closeButton: {
     padding: 8,
@@ -173,6 +183,7 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 18,
     color: '#666',
+    fontFamily: 'Manrope_500Medium',
   },
   newChatButton: {
     margin: 20,
@@ -186,6 +197,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   sessionsList: {
     flex: 1,
@@ -205,10 +217,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     marginBottom: 4,
+    fontFamily: 'Inter_500Medium',
   },
   sessionDate: {
     fontSize: 12,
     color: '#666',
+    fontFamily: 'Inter_400Regular',
   },
   deleteButton: {
     padding: 8,
@@ -216,6 +230,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 16,
+    fontFamily: 'Manrope_500Medium',
   },
   emptyState: {
     alignItems: 'center',
@@ -225,10 +240,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginBottom: 8,
+    fontFamily: 'Inter_400Regular',
   },
   emptyStateSubtext: {
     fontSize: 14,
     color: '#999',
     textAlign: 'center',
+    fontFamily: 'Inter_400Regular',
   },
 });

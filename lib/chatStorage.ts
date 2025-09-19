@@ -15,10 +15,19 @@ const CHAT_SESSIONS_KEY = 'chat_sessions';
 export const chatStorage = {
   async getChatSessions(): Promise<ChatSession[]> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // If no user, return empty array
+        return [];
+      }
+
       // Try Supabase first
       const { data, error } = await supabase
         .from('chat_sessions')
         .select('*')
+        .eq('user_id', user.id || '')
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -54,6 +63,15 @@ export const chatStorage = {
 
   async saveChatSession(session: ChatSession): Promise<void> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // If no user, save to local storage only
+        await this.saveChatSessionToStorage(session);
+        return;
+      }
+
       // Try Supabase first
       const { error } = await supabase
         .from('chat_sessions')
@@ -61,7 +79,8 @@ export const chatStorage = {
           id: session.id,
           title: session.title,
           messages: session.messages,
-          updated_at: session.updatedAt.toISOString(),
+          user_id: user.id || '',
+          updated_at: new Date(session.updatedAt).toISOString(),
         });
 
       if (error) {
@@ -98,11 +117,21 @@ export const chatStorage = {
 
   async deleteChatSession(sessionId: string): Promise<void> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // If no user, delete from local storage only
+        await this.deleteChatSessionFromStorage(sessionId);
+        return;
+      }
+
       // Try Supabase first
       const { error } = await supabase
         .from('chat_sessions')
         .delete()
-        .eq('id', sessionId);
+        .eq('id', sessionId)
+        .eq('user_id', user.id || ''); // Ensure user can only delete their own chats
 
       if (error) {
         console.error('Supabase error:', error);

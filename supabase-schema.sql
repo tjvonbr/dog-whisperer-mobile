@@ -20,9 +20,18 @@ CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id);
 -- Enable Row Level Security (RLS) for future user authentication
 ALTER TABLE chat_sessions ENABLE ROW LEVEL SECURITY;
 
--- For now, allow all operations (you can restrict this later when you add authentication)
-CREATE POLICY "Allow all operations on chat_sessions" ON chat_sessions
-  FOR ALL USING (true);
+-- User-specific policies for chat_sessions
+CREATE POLICY "Users can view their own chat sessions" ON chat_sessions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own chat sessions" ON chat_sessions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own chat sessions" ON chat_sessions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own chat sessions" ON chat_sessions
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- Create a function to automatically update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
