@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/input'
+import { useAuth } from '@/lib/auth'
 import { router } from 'expo-router'
 import React, { useState } from 'react'
 import { Alert, Image, Pressable, Text, View } from 'react-native'
@@ -7,16 +8,29 @@ import "./globals.css"
 
 
 export default function LoginScreen() {
+  const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [isSignUp, setIsSignUp] = useState(false)
 
   async function handleAuth() {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields')
       return
     }
+
+    setLoading(true)
+    
+    const { error } = await signIn(email, password)
+    
+    if (error) {
+      Alert.alert('Error', error.message)
+    } else {
+      // Navigation will be handled by the AuthGuard component
+      router.replace('/(app)')
+    }
+    
+    setLoading(false)
   }
 
   return (
@@ -58,7 +72,7 @@ export default function LoginScreen() {
           disabled={loading}
         >
           <Text className="text-white text-center font-semibold text-lg font-button">
-            {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+            {loading ? 'Loading...' : 'Sign In'}
           </Text>
         </Pressable>
 

@@ -1,23 +1,47 @@
 
 import { Input } from '@/components/ui/input'
+import { useAuth } from '@/lib/auth'
 import { router } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, Image, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Alert, Image, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function RegisterScreen() {
+  const { signUp } = useAuth()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [dogName, setDogName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   async function handleAuth() {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields')
-      return
+    setIsLoading(true)
+
+    const { data, error } = await signUp(email, password, {
+      firstName,
+      lastName,
+      dogName,
+    })
+
+    if (error) {
+      console.log("error")
+      Alert.alert('Error', error.message)
+    } else {
+      console.log("Sign up successful", data)
+      Alert.alert(
+        'Success', 
+        'Account created successfully! Please check your email to verify your account.',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/sign-in')
+          }
+        ]
+      )
     }
+
+    setIsLoading(false)
   }
 
   return (
@@ -89,13 +113,17 @@ export default function RegisterScreen() {
 
       <View>
         <Pressable
-          className={`py-4 px-6 rounded-full ${loading ? 'bg-gray-400' : 'bg-[#1F2747]'}`}
+          className='flex justify-center items-center py-4 px-6 rounded-full bg-[#1F2747]'
           onPress={handleAuth}
-          disabled={loading}
+          disabled={isLoading}
         >
-          <Text className="text-white text-center font-semibold text-lg font-button">
-            {loading ? 'Loading...' : 'Sign Up'}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator color="white" size="large" />
+          ) : (
+            <Text className="text-white text-center font-semibold text-lg font-button">
+              Sign up
+            </Text>
+          )}
         </Pressable>
 
         <Pressable

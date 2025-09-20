@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, userData?: { firstName: string; lastName: string; dogName: string }) => Promise<{ error: any; data?: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -18,14 +18,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('AuthProvider rendering with children:', !!children);
-
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         console.log('Initializing auth...');
         
-        // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Error getting session:', error);
@@ -37,7 +34,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setLoading(false);
 
-        // Listen for auth changes
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((event: any, session: Session | null) => {
@@ -60,13 +56,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, userData?: { firstName: string; lastName: string; dogName: string }) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: userData ? {
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            dogName: userData.dogName,
+          } : undefined
+        }
       });
-      return { error };
+      return { error, data };
     } catch (error) {
       console.error('Sign up error:', error);
       return { error };
