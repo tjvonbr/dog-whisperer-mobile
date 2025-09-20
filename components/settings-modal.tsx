@@ -95,57 +95,29 @@ export default function SettingsModal({ isVisible, onClose }: SettingsModalProps
         ]}
       >
         <SafeAreaView style={styles.modal}>
-          <View style={styles.content}>
-            <View style={styles.userInfo}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {displayName.charAt(0).toUpperCase()}
-                </Text>
+          <View className="w-full h-full bg-white flex flex-col items-center py-2 px-4 rounded-t-xl">
+            <Text className="text-lg font-bold">Settings</Text>
+            
+            <View className="w-full border-b border-gray-200 h-10 flex flex-row items-center">
+              <View style={styles.settingIcon}>
+                <Icons.mail size={20} />
               </View>
-              <View style={styles.userDetails}>
-                <Text style={styles.userName}>{displayName}</Text>
-                <Text style={styles.userEmail}>{user?.email}</Text>
-              </View>
+              <Text>{user?.email}</Text>
             </View>
 
-            <View style={styles.settingsList}>
-              <TouchableOpacity style={styles.settingItem}>
-                <View style={styles.settingIcon}>
-                  <Icons.search color="#666" size={20} />
-                </View>
-                <Text style={styles.settingText}>Notifications</Text>
-                <View style={styles.settingArrow}>
-                  <Text style={styles.arrowText}>›</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.settingItem}>
-                <View style={styles.settingIcon}>
-                  <Icons.search color="#666" size={20} />
-                </View>
-                <Text style={styles.settingText}>Privacy</Text>
-                <View style={styles.settingArrow}>
-                  <Text style={styles.arrowText}>›</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.settingItem}>
-                <View style={styles.settingIcon}>
-                  <Icons.search color="#666" size={20} />
-                </View>
-                <Text style={styles.settingText}>Help & Support</Text>
-                <View style={styles.settingArrow}>
-                  <Text style={styles.arrowText}>›</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.settingItem} onPress={handleSignOut}>
-                <View style={styles.settingIcon}>
-                  <Text style={styles.signOutIcon}>🚪</Text>
-                </View>
-                <Text style={[styles.settingText, styles.signOutText]}>Sign Out</Text>
-              </TouchableOpacity>
+            <View className="w-full border-b border-gray-200 h-10 flex flex-row items-center">
+              <View style={styles.settingIcon}>
+                <Icons.subscription size={20} />
+              </View>
+              <Text>Standard</Text>
             </View>
+
+            <TouchableOpacity className="w-full border-b border-gray-200 h-10 flex flex-row items-center" onPress={handleSignOut}>
+              <View style={styles.settingIcon}>
+                <Icons.signOut color="black" size={20} />
+              </View>
+              <Text>Sign Out</Text>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </Animated.View>
@@ -170,11 +142,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: screenHeight * 0.7,
+    height: screenHeight * 0.4,
   },
   modal: {
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: "lightgray",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: "#000",
@@ -203,10 +178,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
   },
   userInfo: {
     flexDirection: "row",
@@ -274,11 +245,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#666",
     fontFamily: "Manrope_500Medium",
-  },
-  signOutIcon: {
-    fontSize: 18,
-  },
-  signOutText: {
-    color: "#FF3B30",
-  },
+  }
 });

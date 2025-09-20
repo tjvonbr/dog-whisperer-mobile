@@ -1,19 +1,22 @@
 import ChatHistoryMenu from '@/components/chat-menu';
+import { useAuth } from '@/lib/auth';
 import { ChatSession, chatStorage } from '@/lib/chat-storage';
-import { supabase } from '@/lib/supabase';
 import { useChat } from '@ai-sdk/react';
 import Feather from '@expo/vector-icons/Feather';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Icons } from './icons';
 
 export default function ChatApp() {
   const [input, setInput] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+
+  const { user } = useAuth();
 
   const { messages, error, sendMessage, setMessages } = useChat({
     transport: new DefaultChatTransport({
@@ -103,26 +106,6 @@ export default function ChatApp() {
     setInput('');
   };
 
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.auth.signOut();
-            setChatSessions([]);
-            setCurrentSession(null);
-            setMessages([]);
-          }
-        }
-      ]
-    );
-  };
-
   if (error) return <Text>{error.message}</Text>;
 
   return (
@@ -132,7 +115,7 @@ export default function ChatApp() {
           style={styles.menuButton}
           onPress={() => setIsMenuOpen(true)}
         >
-          <Text style={styles.menuButtonText}>☰</Text>
+          <Icons.menu size={20} />
         </TouchableOpacity>
       </View>
 
@@ -168,7 +151,7 @@ export default function ChatApp() {
           <TextInput
             multiline
             style={styles.textInput}
-            placeholder="What do you need help with?"
+            placeholder={`What does ${user?.user_metadata.dogName} need help with?`}
             value={input}
             onChange={e => setInput(e.nativeEvent.text)}
             onSubmitEditing={handleSendMessage}
