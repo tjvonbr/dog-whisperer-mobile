@@ -1,9 +1,8 @@
 
 import { router } from 'expo-router'
 import React, { useState } from 'react'
-import { Alert, Image, Pressable, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, Image, Pressable, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { IconSymbol } from './ui/icon-symbol'
 import { Input } from './ui/input'
 
 
@@ -23,27 +22,12 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1 flex flex-col gap-6 p-6 pb-8">
-        <TouchableOpacity
-          className="w-10 h-10 flex items-center justify-center rounded-2xl px-2 py-1"
-          onPress={() => router.back()}
-          activeOpacity={0.8}>
-          <IconSymbol
-            name="chevron.left"
-            color="black"
-            size={18}
-            weight="medium"
-          />
-        </TouchableOpacity>
-
         <View className="flex items-center">
           <Image 
             source={require('../assets/images/dog_whisperer_ai_logo.png')} 
             className="w-64 h-12"
             resizeMode="contain"
           />
-          <Text className="text-md text-center text-gray-600 font-body">
-            Welcome back to Dog Whisperer!
-          </Text>
         </View>
 
         <View className="grid gap-4">

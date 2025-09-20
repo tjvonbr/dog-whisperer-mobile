@@ -33,7 +33,7 @@ const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
               className="absolute right-0 top-0 bottom-0 flex items-center justify-center"
               onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             >
-              {isPasswordVisible ? <Icons.eye /> : <Icons.eyeOff />}
+              {isPasswordVisible ? <Icons.eye color="gray" /> : <Icons.eyeOff color="gray" />}
             </TouchableOpacity>
           )}
         </View>
