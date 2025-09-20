@@ -1,5 +1,5 @@
-import ChatHistoryMenu from '@/components/ChatHistoryMenu';
-import { ChatSession, chatStorage } from '@/lib/chatStorage';
+import ChatHistoryMenu from '@/components/chat-menu';
+import { ChatSession, chatStorage } from '@/lib/chat-storage';
 import { supabase } from '@/lib/supabase';
 import { useChat } from '@ai-sdk/react';
 import Feather from '@expo/vector-icons/Feather';
@@ -21,7 +21,6 @@ export default function ChatApp() {
     }),
     onError: error => console.error(error, 'ERROR'),
     onFinish: async () => {
-      // Save the session when a message is finished
       if (currentSession) {
         const updatedSession = {
           ...currentSession,
@@ -67,7 +66,6 @@ export default function ChatApp() {
     await chatStorage.deleteChatSession(sessionId);
     loadChatSessions();
     
-    // If we're deleting the current session, start a new chat
     if (currentSession?.id === sessionId) {
       startNewChat();
     }
@@ -129,22 +127,12 @@ export default function ChatApp() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => setIsMenuOpen(true)}
         >
           <Text style={styles.menuButtonText}>☰</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {currentSession?.title || 'Dog Whisperer'}
-        </Text>
-        <TouchableOpacity
-          style={styles.signOutButton}
-          onPress={handleSignOut}
-        >
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
 

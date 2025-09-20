@@ -1,6 +1,6 @@
-import ChatHistoryMenu from '@/components/ChatHistoryMenu';
+import ChatHistoryMenu from '@/components/chat-menu';
 import { useAuth } from '@/lib/auth';
-import { ChatSession, chatStorage } from '@/lib/chatStorage';
+import { ChatSession, chatStorage } from '@/lib/chat-storage';
 import { useChat } from '@ai-sdk/react';
 import Feather from '@expo/vector-icons/Feather';
 import { DefaultChatTransport } from 'ai';

@@ -1,4 +1,4 @@
-import { ChatSession } from '@/lib/chatStorage';
+import { ChatSession } from '@/lib/chat-storage';
 import React from 'react';
 import {
   Animated,
@@ -6,9 +6,14 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Icons } from './icons';
+import SettingsModal from './settings-modal';
+import UserButton from './user-button';
 
 interface ChatHistoryMenuProps {
   isOpen: boolean;
@@ -19,8 +24,10 @@ interface ChatHistoryMenuProps {
   onDeleteSession: (sessionId: string) => void;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const MENU_WIDTH = screenWidth * 0.8;
+
+const AnimatedSafeAreaView = Animated.createAnimatedComponent(SafeAreaView);
 
 export default function ChatHistoryMenu({
   isOpen,
@@ -31,6 +38,8 @@ export default function ChatHistoryMenu({
   onDeleteSession,
 }: ChatHistoryMenuProps) {
   const slideAnimation = React.useRef(new Animated.Value(-MENU_WIDTH)).current;
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [isSettingsVisible, setIsSettingsVisible] = React.useState(false);
 
   React.useEffect(() => {
     Animated.timing(slideAnimation, {
@@ -39,6 +48,15 @@ export default function ChatHistoryMenu({
       useNativeDriver: true,
     }).start();
   }, [isOpen, slideAnimation]);
+
+  const filteredSessions = React.useMemo(() => {
+    if (!searchQuery.trim()) {
+      return chatSessions;
+    }
+    return chatSessions.filter(session =>
+      session.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [chatSessions, searchQuery]);
 
   const formatDate = (date: Date | string | any) => {
     try {
@@ -65,7 +83,6 @@ export default function ChatHistoryMenu({
 
   return (
     <>
-      {/* Backdrop */}
       {isOpen && (
         <TouchableOpacity
           style={styles.backdrop}
@@ -74,8 +91,7 @@ export default function ChatHistoryMenu({
         />
       )}
       
-      {/* Menu */}
-      <Animated.View
+      <AnimatedSafeAreaView
         style={[
           styles.menu,
           {
@@ -84,18 +100,25 @@ export default function ChatHistoryMenu({
         ]}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Chat History</Text>
+          <View style={styles.searchContainer}>
+            <View style={styles.searchIconContainer}>
+              <Icons.search color="#666" size={18} strokeWidth={2} />
+            </View>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#999"
+            />
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
+            <Icons.write color="black" size={18} strokeWidth={2} />
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.newChatButton} onPress={onNewChat}>
-          <Text style={styles.newChatButtonText}>+ New Chat</Text>
-        </TouchableOpacity>
-
         <ScrollView style={styles.sessionsList}>
-          {chatSessions.map((session) => (
+          {filteredSessions.map((session) => (
             <View key={session.id} style={styles.sessionItem}>
               <TouchableOpacity
                 style={styles.sessionContent}
@@ -120,6 +143,15 @@ export default function ChatHistoryMenu({
             </View>
           ))}
           
+          {filteredSessions.length === 0 && chatSessions.length > 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No chats found</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Try adjusting your search terms
+              </Text>
+            </View>
+          )}
+          
           {chatSessions.length === 0 && (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>No chat history yet</Text>
@@ -129,7 +161,16 @@ export default function ChatHistoryMenu({
             </View>
           )}
         </ScrollView>
-      </Animated.View>
+        
+        <View style={styles.userButtonContainer}>
+          <UserButton onPress={() => setIsSettingsVisible(true)} />
+        </View>
+      </AnimatedSafeAreaView>
+
+      <SettingsModal
+        isVisible={isSettingsVisible}
+        onClose={() => setIsSettingsVisible(false)}
+      />
     </>
   );
 }
@@ -149,7 +190,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     width: MENU_WIDTH,
-    height: '100%',
+    height: screenHeight,
     backgroundColor: 'white',
     zIndex: 999,
     shadowColor: '#000',
@@ -166,10 +207,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  searchIconContainer: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    fontFamily: 'Inter_400Regular',
   },
   headerTitle: {
     fontSize: 20,
@@ -247,5 +307,9 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     fontFamily: 'Inter_400Regular',
+  },
+  userButtonContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
 });

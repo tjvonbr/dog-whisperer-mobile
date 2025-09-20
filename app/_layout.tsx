@@ -1,4 +1,4 @@
-import AuthGuard from '@/components/AuthGuard';
+import AuthGuard from '@/components/auth-guard';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/lib/auth';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
