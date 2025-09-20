@@ -1,6 +1,7 @@
 import { forwardRef, useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { cn } from '../../lib/utils';
+import { Icons } from '../icons';
 
 export interface InputProps
   extends React.ComponentPropsWithoutRef<typeof TextInput> {
@@ -14,14 +15,14 @@ const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     
     return (
-      <View className={cn('flex flex-col gap-2', className)}>
-        {label && <Text className={cn('text-base font-medium text-gray-700 font-body', labelClasses)}>{label}</Text>}
-        <View className="relative">
+      <View className={cn('flex flex-col gap-1 bg-white border-2 border-gray-200 focus:border-[#1F2747]', className)}>
+        {label && <Text className={cn('text-base font-medium text-gray-500 font-body', labelClasses)}>{label}</Text>}
+        <View className="relative rounded-lg">
           <TextInput
             ref={ref}
             className={cn(
               inputClasses,
-              'rounded-lg text-base bg-white py-2',
+              'rounded-lg text-lg py-3 leading-tight',
               showPasswordToggle ? 'pr-12' : ''
             )}
             secureTextEntry={showPasswordToggle && !isPasswordVisible}
@@ -29,12 +30,10 @@ const Input = forwardRef<React.ElementRef<typeof TextInput>, InputProps>(
           />
           {showPasswordToggle && (
             <TouchableOpacity
-              className="absolute right-3 top-1/2 -translate-y-1/2"
+              className="absolute right-0 top-0 bottom-0 flex items-center justify-center"
               onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             >
-              <Text className="text-gray-500 font-body text-sm">
-                {isPasswordVisible ? 'Hide' : 'Show'}
-              </Text>
+              {isPasswordVisible ? <Icons.eye /> : <Icons.eyeOff />}
             </TouchableOpacity>
           )}
         </View>

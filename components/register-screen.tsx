@@ -6,8 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { IconSymbol } from './ui/icon-symbol'
 import { Input } from './ui/input'
 
-
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,7 +47,7 @@ export default function LoginScreen() {
 
         <View className="grid gap-4">
           <Input
-            className="border border-black rounded-2xl"
+            className="border border-black rounded-2xl px-4 py-3"
             label="Email"
             onChangeText={setEmail}
             value={email}
@@ -58,7 +57,7 @@ export default function LoginScreen() {
           />
           
           <Input
-            className="border border-black rounded-2xl"
+            className="border border-black rounded-2xl px-4 py-3"
             label="Password"
             onChangeText={setPassword}
             value={password}
@@ -81,9 +80,9 @@ export default function LoginScreen() {
 
           <Pressable
             className="mt-6 py-3"
-            onPress={() => router.push('/sign-up')}
+            onPress={() => router.push('/sign-in')}
           >
-            <Text className="text-gray-400 text-center text-base font-button">
+            <Text className="text-gray-400 text-center font-button">
               {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
             </Text>
           </Pressable>

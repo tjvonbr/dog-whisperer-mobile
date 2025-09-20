@@ -2,7 +2,6 @@ import LoginScreen from '@/components/login-screen';
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import './globals.css';
 
 export default function App() {
@@ -17,9 +16,5 @@ export default function App() {
     })
   }, [])
 
-  return (
-    <SafeAreaView className="h-full bg-white">
-      <LoginScreen />
-    </SafeAreaView>
-  )
+  return <LoginScreen />
 }
