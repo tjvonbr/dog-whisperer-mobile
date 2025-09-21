@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UIMessage } from 'ai';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from './supabase';
 
 export interface ChatSession {
@@ -17,9 +19,11 @@ export const chatStorage = {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user in getChatSessions:', user);
       
       if (!user) {
         // If no user, return empty array
+        console.log('No user found, returning empty array');
         return [];
       }
 
@@ -29,6 +33,8 @@ export const chatStorage = {
         .select('*')
         .eq('user_id', user.id || '')
         .order('updated_at', { ascending: false });
+
+      console.log('Supabase query result:', { data, error, userId: user.id });
 
       if (error) {
         console.error('Supabase error:', error);
@@ -65,33 +71,103 @@ export const chatStorage = {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current user in saveChatSession:', user);
       
       if (!user) {
         // If no user, save to local storage only
+        console.log('No user found, saving to local storage');
         await this.saveChatSessionToStorage(session);
         return;
       }
 
       // Try Supabase first
+      const sessionData = {
+        id: session.id,
+        title: session.title,
+        messages: session.messages,
+        user_id: user.id || '',
+        updated_at: new Date(session.updatedAt).toISOString(),
+      };
+      console.log('Saving session to Supabase:', sessionData);
+      
       const { error } = await supabase
         .from('chat_sessions')
-        .upsert({
-          id: session.id,
-          title: session.title,
-          messages: session.messages,
-          user_id: user.id || '',
-          updated_at: new Date(session.updatedAt).toISOString(),
-        });
+        .upsert(sessionData);
 
       if (error) {
         console.error('Supabase error:', error);
         // Fallback to AsyncStorage
         await this.saveChatSessionToStorage(session);
+      } else {
+        console.log('Successfully saved session to Supabase');
       }
     } catch (error) {
       console.error('Error saving chat session:', error);
       // Fallback to AsyncStorage
       await this.saveChatSessionToStorage(session);
+    }
+  },
+
+  async saveMessageToSession(sessionId: string, message: UIMessage): Promise<void> {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        // If no user, save to local storage only
+        await this.saveMessageToSessionInStorage(sessionId, message);
+        return;
+      }
+
+      // Get current session from Supabase
+      const { data: sessionData, error: fetchError } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching session:', fetchError);
+        await this.saveMessageToSessionInStorage(sessionId, message);
+        return;
+      }
+
+      // Add the new message to the existing messages
+      const updatedMessages = [...(sessionData.messages || []), message];
+
+      // Update the session with the new message
+      const { error: updateError } = await supabase
+        .from('chat_sessions')
+        .update({
+          messages: updatedMessages,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating session with message:', updateError);
+        await this.saveMessageToSessionInStorage(sessionId, message);
+      }
+    } catch (error) {
+      console.error('Error saving message to session:', error);
+      await this.saveMessageToSessionInStorage(sessionId, message);
+    }
+  },
+
+  async saveMessageToSessionInStorage(sessionId: string, message: UIMessage): Promise<void> {
+    try {
+      const sessions = await this.getChatSessionsFromStorage();
+      const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+      
+      if (sessionIndex >= 0) {
+        sessions[sessionIndex].messages.push(message);
+        sessions[sessionIndex].updatedAt = new Date();
+        await AsyncStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(sessions));
+      }
+    } catch (error) {
+      console.error('Error saving message to session in storage:', error);
     }
   },
 
@@ -162,5 +238,21 @@ export const chatStorage = {
       return text.length > 50 ? text.substring(0, 50) + '...' : text;
     }
     return 'New Chat';
+  },
+
+  async createNewSession(firstMessage: UIMessage): Promise<ChatSession> {
+    const sessionId = uuidv4();
+    const title = this.generateSessionTitle([firstMessage]);
+    
+    const newSession: ChatSession = {
+      id: sessionId,
+      title,
+      messages: [firstMessage],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    await this.saveChatSession(newSession);
+    return newSession;
   }
 };

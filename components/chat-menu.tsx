@@ -58,29 +58,6 @@ export default function ChatHistoryMenu({
     );
   }, [chatSessions, searchQuery]);
 
-  const formatDate = (date: Date | string | any) => {
-    try {
-      const d = new Date(date);
-      if (isNaN(d.getTime())) {
-        return 'Unknown';
-      }
-      
-      const now = new Date();
-      const diffInHours = (now.getTime() - d.getTime()) / (1000 * 60 * 60);
-      
-      if (diffInHours < 24) {
-        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      } else if (diffInHours < 168) { // 7 days
-        return d.toLocaleDateString([], { weekday: 'short' });
-      } else {
-        return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-      }
-    } catch (error) {
-      console.error('Error formatting date:', error, 'Date value:', date);
-      return 'Unknown';
-    }
-  };
-
   return (
     <>
       {isOpen && (
@@ -112,7 +89,7 @@ export default function ChatHistoryMenu({
               placeholderTextColor="#999"
             />
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={onNewChat} style={styles.closeButton}>
             <Icons.write color="black" size={18} strokeWidth={2} />
           </TouchableOpacity>
         </View>
@@ -121,24 +98,15 @@ export default function ChatHistoryMenu({
           {filteredSessions.map((session) => (
             <View key={session.id} style={styles.sessionItem}>
               <TouchableOpacity
-                style={styles.sessionContent}
+                className='h-10 flex-1'
                 onPress={() => {
                   onSelectSession(session);
                   onClose();
                 }}
               >
-                <Text style={styles.sessionTitle} numberOfLines={2}>
+                <Text style={styles.sessionTitle} numberOfLines={1}>
                   {session.title}
                 </Text>
-                <Text style={styles.sessionDate}>
-                  {formatDate(session.updatedAt)}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => onDeleteSession(session.id)}
-              >
-                <Text style={styles.deleteButtonText}>🗑</Text>
               </TouchableOpacity>
             </View>
           ))}
@@ -208,8 +176,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
     gap: 12,
   },
   searchContainer: {
@@ -267,11 +233,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  sessionContent: {
-    flex: 1,
   },
   sessionTitle: {
     fontSize: 16,

@@ -3,11 +3,13 @@ import { useAuth } from '@/lib/auth';
 import { ChatSession, chatStorage } from '@/lib/chat-storage';
 import { useChat } from '@ai-sdk/react';
 import Feather from '@expo/vector-icons/Feather';
-import { DefaultChatTransport } from 'ai';
+import { DefaultChatTransport, UIMessage } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import 'react-native-get-random-values';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { v4 as uuidv4 } from 'uuid';
 import { Icons } from './icons';
 
 export default function ChatApp() {
@@ -18,21 +20,33 @@ export default function ChatApp() {
 
   const { user } = useAuth();
 
-  const { messages, error, sendMessage, setMessages } = useChat({
+  // Load chat sessions on component mount
+  useEffect(() => {
+    loadChatSessions();
+  }, []);
+
+  const { messages, error, sendMessage, setMessages, status } = useChat({
     transport: new DefaultChatTransport({
       fetch: expoFetch as unknown as typeof globalThis.fetch,
     }),
-    onError: error => console.error(error, 'ERROR'),
-    onFinish: async () => {
-      if (currentSession) {
-        const updatedSession = {
-          ...currentSession,
-          messages: messages,
-          updatedAt: new Date(),
-        };
-        await chatStorage.saveChatSession(updatedSession);
-        setCurrentSession(updatedSession);
-        loadChatSessions();
+    onError: error => {
+      console.error('Chat error:', error);
+    },
+    onFinish: async (completion) => {
+      try {
+        if (currentSession && completion.message) {
+          await chatStorage.saveMessageToSession(currentSession.id, completion.message);
+          
+          const updatedSession = {
+            ...currentSession,
+            messages: [...currentSession.messages, completion.message],
+            updatedAt: new Date(),
+          };
+          setCurrentSession(updatedSession);
+          loadChatSessions();
+        }
+      } catch (error) {
+        console.error('Error saving assistant message:', error);
       }
     },
   });
@@ -40,15 +54,16 @@ export default function ChatApp() {
   const loadChatSessions = async () => {
     try {
       const sessions = await chatStorage.getChatSessions();
+      console.log('Loaded chat sessions:', sessions);
       setChatSessions(sessions);
     } catch (error) {
       console.error('Error loading chat sessions:', error);
     }
   };
 
-  const startNewChat = () => {
+  const startNewChat = async () => {
     const newSession: ChatSession = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       title: 'New Chat',
       messages: [],
       createdAt: new Date(),
@@ -56,7 +71,10 @@ export default function ChatApp() {
     };
     setCurrentSession(newSession);
     setMessages([]);
+    setInput('');
     setIsMenuOpen(false);
+    // Load sessions to update the menu
+    await loadChatSessions();
   };
 
   const selectSession = (session: ChatSession) => {
@@ -75,38 +93,62 @@ export default function ChatApp() {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || status === 'submitted' || status === 'streaming') return;
 
-    // Create a new session if none exists
-    if (!currentSession) {
-      const newSession: ChatSession = {
-        id: Date.now().toString(),
-        title: 'New Chat',
-        messages: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setCurrentSession(newSession);
+    const userMessage: UIMessage = {
+      id: uuidv4(),
+      role: 'user',
+      parts: [{ type: 'text', text: input }],
+    };
+
+    try {
+      if (!currentSession) {
+        console.log('Creating new session with message:', userMessage);
+        const newSession = await chatStorage.createNewSession(userMessage);
+        console.log('Created new session:', newSession);
+        setCurrentSession(newSession);
+        await loadChatSessions();
+      } else {
+        // Save the user message to the existing session
+        await chatStorage.saveMessageToSession(currentSession.id, userMessage);
+        
+        // Update the current session
+        const updatedSession = {
+          ...currentSession,
+          messages: [...currentSession.messages, userMessage],
+          updatedAt: new Date(),
+        };
+        setCurrentSession(updatedSession);
+      }
+
+      // Send the message to the AI
+      sendMessage({ text: input });
+      setInput('');
+    } catch (error) {
+      console.error('Error handling send message:', error);
     }
-
-    // Update session title if this is the first user message
-    if (currentSession && currentSession.messages.length === 0) {
-      const tempSession = {
-        ...currentSession,
-        title: chatStorage.generateSessionTitle([{ 
-          id: Date.now().toString(),
-          role: 'user', 
-          parts: [{ type: 'text', text: input }] 
-        }]),
-      };
-      setCurrentSession(tempSession);
-    }
-
-    sendMessage({ text: input });
-    setInput('');
   };
 
-  if (error) return <Text>{error.message}</Text>;
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>
+            Something went wrong: {error.message}
+          </Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setMessages([]);
+              loadChatSessions();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -143,6 +185,17 @@ export default function ChatApp() {
             </View>
           </View>
         ))}
+        
+        {/* Loading indicator */}
+        {(status === 'submitted' || status === 'streaming') && (
+          <View style={styles.messageContainer}>
+            <View style={[styles.messageBubble, styles.assistantMessage]}>
+              <Text style={[styles.messageText, styles.assistantMessageText]}>
+                {user?.user_metadata.dogName || 'Your dog'} is thinking...
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Input */}
@@ -158,24 +211,26 @@ export default function ChatApp() {
             autoFocus={true}
           />
           <TouchableOpacity
-            style={styles.sendButton}
+            style={[
+              styles.sendButton,
+              (!input.trim() || status === 'submitted' || status === 'streaming') && styles.sendButtonDisabled
+            ]}
             onPress={handleSendMessage}
-            disabled={!input.trim()}
+            disabled={!input.trim() || status === 'submitted' || status === 'streaming'}
           >
             <Feather name="arrow-up" size={20} color="white" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Chat History Menu */}
-      <ChatHistoryMenu
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        chatSessions={chatSessions}
-        onSelectSession={selectSession}
-        onNewChat={startNewChat}
-        onDeleteSession={deleteSession}
-      />
+        <ChatHistoryMenu
+          isOpen={isMenuOpen}
+          onClose={() => setIsMenuOpen(false)}
+          chatSessions={chatSessions}
+          onSelectSession={selectSession}
+          onNewChat={startNewChat}
+          onDeleteSession={deleteSession}
+        />
     </SafeAreaView>
   );
 }
@@ -288,9 +343,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  sendButtonDisabled: {
+    backgroundColor: '#ccc',
+  },
   sendButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ff4444',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: 'Inter_400Regular',
+  },
+  retryButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
   },
 });
