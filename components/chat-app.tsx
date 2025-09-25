@@ -1,10 +1,11 @@
 import ChatHistoryMenu from '@/components/chat-menu';
 import { useAuth } from '@/lib/auth';
-import { ChatSession, chatStorage } from '@/lib/chat-storage';
+import { Chat, chatStorage } from '@/lib/chat-storage';
+import { generateAPIUrl } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import Feather from '@expo/vector-icons/Feather';
 import { DefaultChatTransport, UIMessage } from 'ai';
-import { fetch as expoFetch } from 'expo/fetch';
+import { fetch } from 'expo/fetch';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import 'react-native-get-random-values';
@@ -15,26 +16,33 @@ import { Icons } from './icons';
 export default function ChatApp() {
   const [input, setInput] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+  const [chatSessions, setChatSessions] = useState<Chat[]>([]);
+  const [currentSession, setCurrentSession] = useState<Chat | null>(null);
 
   const { user } = useAuth();
 
-  // Load chat sessions on component mount
   useEffect(() => {
     loadChatSessions();
   }, []);
 
-  const { messages, error, sendMessage, setMessages, status } = useChat({
+  const {status, messages, setMessages, error, sendMessage } = useChat({
     transport: new DefaultChatTransport({
-      fetch: expoFetch as unknown as typeof globalThis.fetch,
+      fetch: fetch as unknown as typeof globalThis.fetch,
+      api: generateAPIUrl('/api/chat'),
     }),
     onError: error => {
       console.error('Chat error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
     },
     onFinish: async (completion) => {
+      console.log('Chat finished with completion:', completion);
       try {
         if (currentSession && completion.message) {
+          console.log('Saving assistant message:', completion.message);
           await chatStorage.saveMessageToSession(currentSession.id, completion.message);
           
           const updatedSession = {
@@ -51,6 +59,15 @@ export default function ChatApp() {
     },
   });
 
+  useEffect(() => {
+    console.log('Messages updated:', messages);
+  }, [messages]);
+
+  // Debug: Log status changes
+  useEffect(() => {
+    console.log('Chat status changed to:', status);
+  }, [status]);
+
   const loadChatSessions = async () => {
     try {
       const sessions = await chatStorage.getChatSessions();
@@ -62,7 +79,7 @@ export default function ChatApp() {
   };
 
   const startNewChat = async () => {
-    const newSession: ChatSession = {
+    const newSession: Chat = {
       id: uuidv4(),
       title: 'New Chat',
       messages: [],
@@ -73,11 +90,10 @@ export default function ChatApp() {
     setMessages([]);
     setInput('');
     setIsMenuOpen(false);
-    // Load sessions to update the menu
     await loadChatSessions();
   };
 
-  const selectSession = (session: ChatSession) => {
+  const selectSession = (session: Chat) => {
     setCurrentSession(session);
     setMessages(session.messages);
     setIsMenuOpen(false);
@@ -102,9 +118,13 @@ export default function ChatApp() {
     };
 
     try {
+      console.log('Starting to send message:', input);
+      console.log('Current status:', status);
+      console.log('Current session:', currentSession?.id);
+
       if (!currentSession) {
         console.log('Creating new session with message:', userMessage);
-        const newSession = await chatStorage.createNewSession(userMessage);
+        const newSession = await chatStorage.createNewChat(userMessage);
         console.log('Created new session:', newSession);
         setCurrentSession(newSession);
         await loadChatSessions();
@@ -121,11 +141,17 @@ export default function ChatApp() {
         setCurrentSession(updatedSession);
       }
 
-      // Send the message to the AI
+      console.log('About to call sendMessage with:', { text: input });
+      console.log('API URL:', generateAPIUrl('/api/chat'));
+      
       sendMessage({ text: input });
       setInput('');
     } catch (error) {
       console.error('Error handling send message:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
     }
   };
 

@@ -4,7 +4,7 @@ import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from './supabase';
 
-export interface ChatSession {
+export interface Chat {
   id: string;
   title: string;
   messages: UIMessage[];
@@ -15,14 +15,13 @@ export interface ChatSession {
 const CHAT_SESSIONS_KEY = 'chat_sessions';
 
 export const chatStorage = {
-  async getChatSessions(): Promise<ChatSession[]> {
+  async getChatSessions(): Promise<Chat[]> {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       console.log('Current user in getChatSessions:', user);
       
       if (!user) {
-        // If no user, return empty array
         console.log('No user found, returning empty array');
         return [];
       }
@@ -57,7 +56,7 @@ export const chatStorage = {
     }
   },
 
-  async getChatSessionsFromStorage(): Promise<ChatSession[]> {
+  async getChatSessionsFromStorage(): Promise<Chat[]> {
     try {
       const sessions = await AsyncStorage.getItem(CHAT_SESSIONS_KEY);
       return sessions ? JSON.parse(sessions) : [];
@@ -67,20 +66,16 @@ export const chatStorage = {
     }
   },
 
-  async saveChatSession(session: ChatSession): Promise<void> {
+  async saveChat(session: Chat): Promise<void> {
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user in saveChatSession:', user);
       
       if (!user) {
-        // If no user, save to local storage only
         console.log('No user found, saving to local storage');
         await this.saveChatSessionToStorage(session);
         return;
       }
 
-      // Try Supabase first
       const sessionData = {
         id: session.id,
         title: session.title,
@@ -110,16 +105,13 @@ export const chatStorage = {
 
   async saveMessageToSession(sessionId: string, message: UIMessage): Promise<void> {
     try {
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        // If no user, save to local storage only
         await this.saveMessageToSessionInStorage(sessionId, message);
         return;
       }
 
-      // Get current session from Supabase
       const { data: sessionData, error: fetchError } = await supabase
         .from('chat_sessions')
         .select('*')
@@ -133,10 +125,8 @@ export const chatStorage = {
         return;
       }
 
-      // Add the new message to the existing messages
       const updatedMessages = [...(sessionData.messages || []), message];
 
-      // Update the session with the new message
       const { error: updateError } = await supabase
         .from('chat_sessions')
         .update({
@@ -171,7 +161,7 @@ export const chatStorage = {
     }
   },
 
-  async saveChatSessionToStorage(session: ChatSession): Promise<void> {
+  async saveChatSessionToStorage(session: Chat): Promise<void> {
     try {
       const sessions = await this.getChatSessionsFromStorage();
       const existingIndex = sessions.findIndex(s => s.id === session.id);
@@ -240,11 +230,11 @@ export const chatStorage = {
     return 'New Chat';
   },
 
-  async createNewSession(firstMessage: UIMessage): Promise<ChatSession> {
+  async createNewChat(firstMessage: UIMessage): Promise<Chat> {
     const sessionId = uuidv4();
     const title = this.generateSessionTitle([firstMessage]);
     
-    const newSession: ChatSession = {
+    const newChat: Chat = {
       id: sessionId,
       title,
       messages: [firstMessage],
@@ -252,7 +242,7 @@ export const chatStorage = {
       updatedAt: new Date(),
     };
 
-    await this.saveChatSession(newSession);
-    return newSession;
+    await this.saveChat(newChat);
+    return newChat;
   }
 };

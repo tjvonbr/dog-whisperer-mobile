@@ -1,4 +1,4 @@
-import { ChatSession } from '@/lib/chat-storage';
+import { Chat } from '@/lib/chat-storage';
 import React from 'react';
 import {
   Animated,
@@ -18,8 +18,8 @@ import UserButton from './user-button';
 interface ChatHistoryMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  chatSessions: ChatSession[];
-  onSelectSession: (session: ChatSession) => void;
+  chatSessions: Chat[];
+  onSelectSession: (session: Chat) => void;
   onNewChat: () => void;
   onDeleteSession: (sessionId: string) => void;
 }
