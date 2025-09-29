@@ -5,6 +5,7 @@ import { generateAPIUrl } from '@/lib/utils';
 import { useChat } from '@ai-sdk/react';
 import Feather from '@expo/vector-icons/Feather';
 import { DefaultChatTransport, UIMessage } from 'ai';
+import { router } from 'expo-router';
 import { fetch } from 'expo/fetch';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -185,6 +186,12 @@ export default function ChatApp() {
         >
           <Icons.menu size={20} />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => router.push('/calendar')}
+        >
+          <Icons.calendar size={20} />
+        </TouchableOpacity>
       </View>
 
       {/* Chat Messages */}
@@ -269,6 +276,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: 'white',

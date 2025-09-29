@@ -1,9 +1,11 @@
-import { ChartNoAxesGantt, Eye, EyeOff, Loader2, LogOut, Mail, Search, SquarePen, SquarePlus, type LucideIcon } from 'lucide-react-native'
+import { Calendar, ChartNoAxesGantt, Eye, EyeOff, Loader2, LogOut, Mail, MessageCircle, Search, SquarePen, SquarePlus, type LucideIcon } from 'lucide-react-native'
 
 export const Icons: Record<string, LucideIcon> = {
-  menu: ChartNoAxesGantt,
+  calendar: Calendar,
+  chat: MessageCircle,
   eye: Eye,
   eyeOff: EyeOff,
+  menu: ChartNoAxesGantt,
   mail: Mail,
   search: Search,
   signOut: LogOut,
